@@ -6,6 +6,8 @@ Scripts to record Wi-Fi CSI between two ESP32-S3 boards and check whether a hand
 - `src/gestura/evaluation/`: `analyze_protocol.py`, `analyze_rhythm.py`.
 - Recordings and analysis printouts are written to `data/recordings/`. That folder is ignored by git; never commit recordings.
 
+The boards must already run the firmware from the 17 October test: the receiver (A) runs a patched `csi_recv`, the sender (G) runs `csi_send`, both from the `esp-csi` examples. The receiver patch is not in this repository yet and will follow in a separate pull request. Boards that are not flashed yet cannot be used with these scripts; ask the team member who holds them (GES-36).
+
 ## Setup (once)
 
 Python 3 is required. From the repository root:
