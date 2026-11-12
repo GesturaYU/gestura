@@ -1,0 +1,60 @@
+@startuml use-case-1-setup
+' GES-45 - Gestura use case diagram 1: room and mode setup
+' Use case IDs match the use case table in the SoW (Low Level Functionalities).
+' F and L references point to Tables 1 and 2 of the Scope of Work (GES-44).
+
+top to bottom direction
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  ArrowColor #333333
+}
+skinparam usecase<<later stage>> {
+  BackgroundColor #EEEEEE
+  BorderColor #888888
+  BorderStyle dashed
+  FontColor #555555
+  StereotypeFontColor #777777
+}
+
+actor "User" as User
+
+rectangle "Gestura" {
+  usecase "UC1 Set up a new room" as UC1
+  usecase "UC2 Guide device placement" as UC2
+  usecase "UC3 Check device connection" as UC3
+  usecase "UC4 Open a saved room" as UC4
+  usecase "UC5 Select a mode" as UC5
+  usecase "UC6 View gesture-to-command\nmapping" as UC6
+  usecase "UC7 Change gesture-to-command\nmapping" as UC7
+
+  usecase "UC15 Calibrate the room" <<later stage>> as UC15
+  usecase "UC16 Record background\nsignal" <<later stage>> as UC16
+  usecase "UC17 Record and check\ngesture examples" <<later stage>> as UC17
+  usecase "UC18 Teach a personal\ngesture" <<later stage>> as UC18
+  usecase "UC19 Quick re-check\nof calibration" <<later stage>> as UC19
+}
+
+User --> UC1
+User --> UC4
+User --> UC5
+
+UC1 ..> UC2 : <<include>>
+UC1 ..> UC3 : <<include>>
+UC4 ..> UC3 : <<include>>
+UC5 ..> UC6 : <<include>>
+UC7 .up.> UC5 : <<extend>>
+
+UC15 .up.> UC1 : <<extend>>
+UC15 ..> UC16 : <<include>>
+UC15 ..> UC17 : <<include>>
+UC18 .up.> UC7 : <<extend>>
+UC18 ..> UC17 : <<include>>
+UC19 .up.> UC4 : <<extend>>
+UC19 ..> UC17 : <<include>>
+
+@enduml

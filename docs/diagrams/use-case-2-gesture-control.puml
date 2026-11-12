@@ -1,0 +1,41 @@
+@startuml use-case-2-gesture-control
+' GES-45 - Gestura use case diagram 2: gesture control
+' Use case IDs match the use case table in the SoW (Low Level Functionalities).
+' F references point to Table 1 of the Scope of Work (GES-44).
+
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  ArrowColor #333333
+}
+
+actor "User" as User
+
+rectangle "Gestura" {
+  usecase "UC8 Start listening" as UC8
+  usecase "UC9 Pause listening" as UC9
+  usecase "UC10 Control the computer\nwith a gesture" as UC10
+  usecase "UC11 Recognize gesture" as UC11
+  usecase "UC12 Send command" as UC12
+  usecase "UC13 Show recognition\nfeedback" as UC13
+  usecase "UC14 Stream CSI\nfrom the boards" as UC14
+}
+
+actor "Computer application\n(slides, document,\nmedia player)" as App
+
+User --> UC8
+User --> UC10
+User --> UC9
+
+UC10 ..> UC11 : <<include>>
+UC10 ..> UC12 : <<include>>
+UC10 ..> UC13 : <<include>>
+UC11 ..> UC14 : <<include>>
+UC12 --> App
+
+@enduml

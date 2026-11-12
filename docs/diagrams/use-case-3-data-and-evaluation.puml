@@ -1,0 +1,56 @@
+@startuml use-case-3-data-and-evaluation
+' GES-45 - Gestura use case diagram 3: data collection, training and evaluation
+' Use case IDs (UC14, UC20-UC27) match the use case table in the SoW (Low Level Functionalities).
+' F and L references point to Table 1 and Table 2 of the Scope of Work (GES-44).
+
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  ArrowColor #333333
+}
+skinparam usecase<<later stage>> {
+  BackgroundColor #EEEEEE
+  BorderColor #888888
+  BorderStyle dashed
+  FontColor #555555
+  StereotypeFontColor #777777
+}
+
+actor "Researcher\n(team member)" as Researcher
+actor "Participant\n(team member)" as Participant
+
+rectangle "Gestura" {
+
+  usecase "UC20 Record a scripted\nsession" as UC20
+  usecase "UC14 Stream CSI\nfrom the boards" as UC14
+  usecase "UC21 Monitor packet rate\nand packet loss" as UC21
+  usecase "UC22 Build held-out\ndata splits" as UC22
+  usecase "UC23 Train and compare\nrecognizers" as UC23
+  usecase "UC24 Evaluate on held-out\nrecordings" as UC24
+  usecase "UC25 Run a live trial" as UC25
+  usecase "UC26 Report live-use\nmetrics" as UC26
+  usecase "UC27 Compare with and\nwithout calibration" <<later stage>> as UC27
+}
+
+Researcher --> UC20
+Researcher --> UC23
+Researcher --> UC24
+Researcher --> UC25
+Participant --> UC20
+Participant --> UC25
+
+UC20 ..> UC14 : <<include>>
+UC20 ..> UC21 : <<include>>
+UC23 ..> UC22 : <<include>>
+UC24 ..> UC22 : <<include>>
+UC25 ..> UC21 : <<include>>
+UC25 ..> UC26 : <<include>>
+UC27 .up.> UC24 : <<extend>>
+
+@enduml
