@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "fixture_is_synthetic": true,
+  "receiver_id": "rx1",
+  "accepted": [
+    {"id": 100, "mac": "aa:bb:cc:dd:ee:ff", "channel": 11, "local_timestamp": 123456, "len": 4, "first_word": 0, "data": [1, -2, 3, -4]},
+    {"id": 101, "mac": "aa:bb:cc:dd:ee:ff", "channel": 11, "local_timestamp": 124456, "len": 4, "first_word": 1, "data": [5, -6, 7, -8]}
+  ],
+  "rejected": [
+    {"id_if_parseable": 102, "reason": "payload_length_mismatch"},
+    {"id_if_parseable": 103, "reason": "invalid_payload_integer"}
+  ]
+}

@@ -1,0 +1,5 @@
+type,id,mac,rssi,rate,sig_mode,mcs,bandwidth,smoothing,not_sounding,aggregation,stbc,fec_coding,sgi,noise_floor,ampdu_cnt,channel,secondary_channel,local_timestamp,ant,sig_len,rx_format,len,first_word,data
+CSI_DATA,100,aa:bb:cc:dd:ee:ff,-51,11,0,0,0,0,0,0,0,0,0,-96,0,11,0,123456,0,128,0,4,0,"[1,-2,3,-4]"
+CSI_DATA,101,aa:bb:cc:dd:ee:ff,-49,11,0,0,0,0,0,0,0,0,0,-96,0,11,0,124456,0,128,0,4,1,"[5,-6,7,-8]"
+CSI_DATA,102,aa:bb:cc:dd:ee:ff,-48,11,0,0,0,0,0,0,0,0,0,-96,0,11,0,125456,0,128,0,4,0,"[9,-10,11]"
+CSI_DATA,103,aa:bb:cc:dd:ee:ff,-47,11,0,0,0,0,0,0,0,0,0,-96,0,11,0,126456,0,128,0,4,0,"[12,-13,not_int,-15]"

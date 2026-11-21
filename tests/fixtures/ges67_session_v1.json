@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "session_id": "synthetic-001",
+  "recording_date": "2026-11-21",
+  "start_time_utc": "2026-11-21T12:00:00Z",
+  "end_time_utc": "2026-11-21T12:00:05Z",
+  "participant_code": "P1",
+  "room_id": "R1",
+  "session_type": "cued_trials",
+  "sender": {
+    "board_id": "tx1",
+    "firmware_commit": "synthetic",
+    "channel": 11,
+    "configured_packet_rate_hz": 100
+  },
+  "receivers": [
+    {
+      "receiver_id": "rx1",
+      "board_id": "board-a",
+      "firmware_commit": "synthetic",
+      "transport_port": "COM10",
+      "channel": 11,
+      "antenna_setting": "onboard",
+      "gain_setting": "fixed"
+    }
+  ],
+  "placement": {
+    "description": "synthetic straight-line setup",
+    "distance_m": 1.0,
+    "sender_height_m": 0.75,
+    "receiver_heights_m": {"rx1": 0.75},
+    "antenna_orientation": "facing"
+  },
+  "other_people_present": false,
+  "packet_metrics": {
+    "rx1": {
+      "observed_packets": 2,
+      "unique_sender_ids": 2,
+      "duplicates": 0,
+      "malformed_lines": 2,
+      "disconnect_intervals": 0,
+      "measured_packet_rate_hz": 0.4,
+      "estimated_loss_percent": 0.0,
+      "provisional": true
+    }
+  },
+  "collection_tool_version": "synthetic"
+}
