@@ -23,7 +23,7 @@ Wire header:
 type,id,mac,rssi,rate,sig_mode,mcs,bandwidth,smoothing,not_sounding,aggregation,stbc,fec_coding,sgi,noise_floor,ampdu_cnt,channel,secondary_channel,local_timestamp,ant,sig_len,rx_format,len,first_word,data
 ```
 
-The current overlay derives `id` from four sender-payload bytes. GES-68 must verify the sender actually writes a monotonically increasing unsigned sequence at that offset, its byte order and reset behavior, before the contract is treated as final. A receiver must emit only one complete CSV line per packet. If firmware changes this order or representation, increment the schema version and update the fixture and both consumers together.
+The current overlay derives `id` by reading four bytes at `info->payload + 15` without a visible payload-length check. GES-68 must verify the sender actually writes a monotonically increasing unsigned sequence at that offset, its byte order and reset behavior, and add the needed bounds check before the contract is treated as final. The overlay also prints `rx_ctrl->sig_mode` in both the `sig_mode` and `rx_format` positions; the firmware reviewer must decide whether the latter should use a different ESP-IDF field. Until then, the host preserves `rx_format` as an opaque integer. A receiver must emit only one complete CSV line per packet. If firmware changes this order or representation, increment the schema version and update the fixture and both consumers together.
 
 ## 2. Host record and error handling
 
