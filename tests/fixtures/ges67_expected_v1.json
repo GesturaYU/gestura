@@ -1,13 +1,21 @@
 {
   "schema_version": "1.0.0",
   "fixture_is_synthetic": true,
+  "source": "ges67_wire_v1.csv",
   "receiver_id": "rx1",
-  "accepted": [
-    {"id": 100, "mac": "aa:bb:cc:dd:ee:ff", "channel": 11, "local_timestamp": 123456, "len": 4, "first_word": 0, "data": [1, -2, 3, -4]},
-    {"id": 101, "mac": "aa:bb:cc:dd:ee:ff", "channel": 11, "local_timestamp": 124456, "len": 4, "first_word": 1, "data": [5, -6, 7, -8]}
+  "omitted_host_fields": ["host_time_utc", "host_monotonic_ns", "raw_line"],
+  "ignored_lines": [
+    {"line": 1, "kind": "log"},
+    {"line": 2, "kind": "header"}
   ],
-  "rejected": [
-    {"id_if_parseable": 102, "reason": "payload_length_mismatch"},
-    {"id_if_parseable": 103, "reason": "invalid_payload_integer"}
+  "records": [
+    {"line": 3, "type": "CSI_DATA", "id": 100, "mac": "1a:00:00:00:00:00", "rssi": -48, "rate": 11, "sig_mode": 1, "mcs": 0, "bandwidth": 0, "smoothing": 1, "not_sounding": 1, "aggregation": 0, "stbc": 0, "fec_coding": 0, "sgi": 0, "noise_floor": -96, "ampdu_cnt": 0, "channel": 11, "secondary_channel": 0, "local_timestamp": 123456, "ant": 0, "sig_len": 47, "rx_state": 0, "len": 4, "first_word": 0, "data": [3, -1, 2, 0]},
+    {"line": 4, "type": "CSI_DATA", "id": 101, "mac": "1a:00:00:00:00:00", "rssi": -49, "rate": 11, "sig_mode": 1, "mcs": 0, "bandwidth": 0, "smoothing": 1, "not_sounding": 1, "aggregation": 0, "stbc": 0, "fec_coding": 0, "sgi": 0, "noise_floor": -96, "ampdu_cnt": 0, "channel": 11, "secondary_channel": 0, "local_timestamp": 134456, "ant": 0, "sig_len": 47, "rx_state": 0, "len": 4, "first_word": 1, "data": [4, -2, 2, 1]},
+    {"line": 8, "type": "CSI_DATA", "id": 105, "mac": "1a:00:00:00:00:00", "rssi": -48, "rate": 11, "sig_mode": 1, "mcs": 0, "bandwidth": 0, "smoothing": 1, "not_sounding": 1, "aggregation": 0, "stbc": 0, "fec_coding": 0, "sgi": 0, "noise_floor": -96, "ampdu_cnt": 0, "channel": 11, "secondary_channel": 0, "local_timestamp": 178456, "ant": 0, "sig_len": 47, "rx_state": 0, "len": 4, "first_word": 0, "data": [6, -4, 3, 2]}
+  ],
+  "events": [
+    {"line": 5, "kind": "malformed_record", "reason": "payload_length_mismatch", "id_if_parseable": 102},
+    {"line": 6, "kind": "malformed_record", "reason": "invalid_payload_integer", "id_if_parseable": 103},
+    {"line": 7, "kind": "malformed_record", "reason": "invalid_payload", "id_if_parseable": 104}
   ]
 }

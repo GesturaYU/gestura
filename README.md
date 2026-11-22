@@ -18,7 +18,7 @@ Feasibility stage. The scripts that record and analyze CSI with one sender and o
 firmware/
   sender/        sender board
   receiver/      receiver boards
-  common/        packet format shared by the firmware and the Python code
+  common/        code shared by the sender and receiver firmware
 src/gestura/
   acquisition/   reading CSI from the receivers (now: feasibility test scripts)
   dataset/       recordings, labels and sessions as training data
@@ -51,7 +51,7 @@ The system has five parts:
 - `acquisition`, `dataset`, `processing` and `models` are the core. `training`, `evaluation`, `runtime` and `app` build on the core.
 - `runtime` does not depend on `training`.
 - Training and the real-time service use the same code in `processing`, so the live service gives the model the same kind of input it saw in training.
-- `firmware/common` defines the packet format (sequence number, timestamp, receiver ID). It is the contract between the C firmware and the Python code.
+- [`docs/csi-session-contract-v1.md`](docs/csi-session-contract-v1.md) defines the receiver record and session format (sender sequence number, timestamps, receiver ID). It is the contract between the C firmware and the Python code.
 
 ## Data
 
