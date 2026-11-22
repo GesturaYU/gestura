@@ -1,0 +1,8 @@
+I (612) csi_recv_ab: ================ CSI RECV ================
+type,id,mac,rssi,rate,sig_mode,mcs,bandwidth,smoothing,not_sounding,aggregation,stbc,fec_coding,sgi,noise_floor,ampdu_cnt,channel,secondary_channel,local_timestamp,ant,sig_len,rx_state,len,first_word,data
+CSI_DATA,100,1a:00:00:00:00:00,-48,11,1,0,0,1,1,0,0,0,0,-96,0,11,0,123456,0,47,0,4,0,"[3,-1,2,0]"
+CSI_DATA,101,1a:00:00:00:00:00,-49,11,1,0,0,1,1,0,0,0,0,-96,0,11,0,134456,0,47,0,4,1,"[4,-2,2,1]"
+CSI_DATA,102,1a:00:00:00:00:00,-48,11,1,0,0,1,1,0,0,0,0,-96,0,11,0,145456,0,47,0,4,0,"[5,-2,3]"
+CSI_DATA,103,1a:00:00:00:00:00,-47,11,1,0,0,1,1,0,0,0,0,-96,0,11,0,156456,0,47,0,4,0,"[5,-3,x1,1]"
+CSI_DATA,104,1a:00:00:00:00:00,-48,11,1,0,0,1,1,0,0,0,0,-96,0,11,0,167456,0,47,0,4,0,"[6,-3,E (30012) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+CSI_DATA,105,1a:00:00:00:00:00,-48,11,1,0,0,1,1,0,0,0,0,-96,0,11,0,178456,0,47,0,4,0,"[6,-4,3,2]"

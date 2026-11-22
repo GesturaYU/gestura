@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0.0",
+  "session_id": "S20261121-090000",
+  "recording_date": "2026-11-21",
+  "start_time_utc": "2026-11-21T09:00:00Z",
+  "end_time_utc": "2026-11-21T09:00:05Z",
+  "participant_code": "P1",
+  "room_id": "R1",
+  "room_type": "campus",
+  "room_role": "dataset",
+  "session_type": "cued_trials",
+  "sender": {
+    "board_id": "B1",
+    "firmware_commit": "synthetic",
+    "channel": 11,
+    "bandwidth_mhz": 20,
+    "configured_packet_rate_hz": 100
+  },
+  "receivers": [
+    {
+      "receiver_id": "rx1",
+      "board_id": "B2",
+      "usb_serial_number": "SYNTHETIC-B2",
+      "transport_port": "COM10",
+      "firmware_commit": "synthetic",
+      "channel": 11,
+      "bandwidth_mhz": 20,
+      "gain_setting": "forced_after_100_packets"
+    }
+  ],
+  "placement": {
+    "description": "synthetic table setup",
+    "sender_height_m": 0.75,
+    "receivers": {
+      "rx1": {
+        "distance_from_sender_m": 1.0,
+        "height_m": 0.75,
+        "antenna_orientation": "facing_sender"
+      }
+    }
+  },
+  "other_people_present": true,
+  "other_people_count": 1,
+  "recorder_in_room": true,
+  "signal_check": {
+    "time_utc": "2026-11-21T08:59:30Z",
+    "interval_s": 10,
+    "passed": true,
+    "receivers": {
+      "rx1": {"connected": true, "packet_rate_hz": 90.8}
+    }
+  },
+  "packet_metrics": {
+    "rx1": {
+      "accepted_records": 3,
+      "unique_sender_ids": 3,
+      "duplicates": 0,
+      "malformed_lines": 3,
+      "first_id": 100,
+      "last_id": 105,
+      "expected_ids": 6,
+      "missing_ids": 3,
+      "sender_restarts": 0,
+      "disconnect_intervals": [],
+      "rate_interval_s": 5,
+      "measured_packet_rate_hz": 0.6,
+      "estimated_loss_percent": 50.0,
+      "provisional": true
+    }
+  },
+  "collection_tool_version": "synthetic"
+}
