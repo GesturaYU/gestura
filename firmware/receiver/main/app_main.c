@@ -26,6 +26,7 @@
 #include "esp_now.h"
 #include "esp_csi_gain_ctrl.h"
 
+#include <inttypes.h>
 #include <stdarg.h>
 #include <errno.h>
 #include "esp_event.h"
@@ -249,6 +250,14 @@ static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
         return;
     }
 
+    // The sender's packet counter follows the 15-byte ESP-NOW vendor-specific
+    // header. A shorter payload has no counter, so it is not a sender record.
+    if (info->payload_len < 19) {
+        return;
+    }
+    uint32_t rx_id;
+    memcpy(&rx_id, info->payload + 15, sizeof(rx_id));
+
     const wifi_pkt_rx_ctrl_t *rx_ctrl = &info->rx_ctrl;
     static int s_count = 0;
     float compensate_gain = 1.0f;
@@ -272,7 +281,6 @@ static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
 #endif
 
     out_begin();
-    uint32_t rx_id = *(uint32_t *)(info->payload + 15);
 #if CONFIG_IDF_TARGET_ESP32C5 || CONFIG_IDF_TARGET_ESP32C6 || CONFIG_IDF_TARGET_ESP32C61
     if (!s_count) {
         ESP_LOGI(TAG, "================ CSI RECV ================");
@@ -286,15 +294,15 @@ static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
 #else
     if (!s_count) {
         ESP_LOGI(TAG, "================ CSI RECV ================");
-        out_printf("type,id,mac,rssi,rate,sig_mode,mcs,bandwidth,smoothing,not_sounding,aggregation,stbc,fec_coding,sgi,noise_floor,ampdu_cnt,channel,secondary_channel,local_timestamp,ant,sig_len,rx_format,len,first_word,data\n");
+        out_printf("type,id,mac,rssi,rate,sig_mode,mcs,bandwidth,smoothing,not_sounding,aggregation,stbc,fec_coding,sgi,noise_floor,ampdu_cnt,channel,secondary_channel,local_timestamp,ant,sig_len,rx_state,len,first_word,data\n");
     }
 
-    out_printf("CSI_DATA,%d," MACSTR ",%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+    out_printf("CSI_DATA,%" PRIu32 "," MACSTR ",%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%" PRIu32 ",%d,%d,%d",
                rx_id, MAC2STR(info->mac), rx_ctrl->rssi, rx_ctrl->rate, rx_ctrl->sig_mode,
                rx_ctrl->mcs, rx_ctrl->cwb, rx_ctrl->smoothing, rx_ctrl->not_sounding,
                rx_ctrl->aggregation, rx_ctrl->stbc, rx_ctrl->fec_coding, rx_ctrl->sgi,
                rx_ctrl->noise_floor, rx_ctrl->ampdu_cnt, rx_ctrl->channel, rx_ctrl->secondary_channel,
-               rx_ctrl->timestamp, rx_ctrl->ant, rx_ctrl->sig_len, rx_ctrl->sig_mode);
+               (uint32_t)rx_ctrl->timestamp, rx_ctrl->ant, rx_ctrl->sig_len, rx_ctrl->rx_state);
 
 #endif
 #if (CONFIG_IDF_TARGET_ESP32C5 || CONFIG_IDF_TARGET_ESP32C61) && CSI_FORCE_LLTF
