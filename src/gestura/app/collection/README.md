@@ -13,7 +13,8 @@ and the cue times saved automatically. The files follow
    stored in `session.json`; the session stops if the check fails.
 4. 50 trials in random order: 10 push, 10 slow wave, 10 fast wave, 20 no gesture. For each trial
    the class is shown, a high beep starts a 3 s cue window and a low beep ends it. The recorder then
-   presses Enter (OK) or `f` and picks a reason (failed trials stay in the file with `failed=true`).
+   presses Enter (OK), or types `f` and picks a reason, or types `f1`-`f4` to give the reason at once
+   (failed trials stay in the file with `failed=true`). Any other answer is asked again.
 5. `trials.csv` is rewritten after every trial, so an interrupted session keeps its trials.
    `end_time_utc` is written at the end.
 

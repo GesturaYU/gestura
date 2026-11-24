@@ -136,15 +136,26 @@ class ConsoleUI:
         print(f"\nTrial {i}/{n}:  {self.LABELS[class_label]}   (start beep, then {class_label})", flush=True)
 
     def ask_failed(self, planned):
-        answer = input("  Enter = OK, f = failed: ").strip().lower()
-        if answer != "f":
-            return False, ""
-        for n, reason in enumerate(FAILED_REASONS, start=1):
-            print(f"    {n}) {reason}")
+        """Only an empty answer means OK; anything unclear is asked again, never taken as OK."""
+        n = len(FAILED_REASONS)
+        while True:
+            answer = input(f"  Enter = OK, f or f1-f{n} = failed: ").strip().lower()
+            if answer == "":
+                return False, ""
+            if answer == "f":
+                return True, self._ask_reason()
+            if len(answer) == 2 and answer[0] == "f" and answer[1].isdigit() and 1 <= int(answer[1]) <= n:
+                return True, FAILED_REASONS[int(answer[1]) - 1]
+            print(f"  Not understood: {answer!r}. Press Enter for OK, or type f, f1 ... f{n}.")
+
+    def _ask_reason(self):
+        for i, reason in enumerate(FAILED_REASONS, start=1):
+            print(f"    {i}) {reason}")
         while True:
             choice = input("  Reason: ").strip()
             if choice.isdigit() and 1 <= int(choice) <= len(FAILED_REASONS):
-                return True, FAILED_REASONS[int(choice) - 1]
+                return FAILED_REASONS[int(choice) - 1]
+            print(f"  Type a number from 1 to {len(FAILED_REASONS)}.")
 
 
 class AutoUI:
