@@ -87,11 +87,12 @@ normal reception, missing ids, duplicates, sender restarts (also during a discon
 wrap, negative ids from older firmware, malformed lines, disconnects with and without reconnect,
 two receivers in one capture directory, the NFR-09 comparison and the command line.
 
-## Interpretations to confirm
+## Events that do not split a run
 
-- A receiver restart (`receiver_restarted`) does not start a new run: the contract excludes only
-  sender restarts, disconnects and wraps. Ids lost while the receiver reboots (about 0.35 s in the
-  GES-68 check) therefore count as loss.
-- `receiver_stalled` / `receiver_resumed` (proposed in GES-69, not in contract 1.0.0) do not
-  change the calculation. A stall caused by a sender restart already starts a new run through the
-  lower `id`.
+- `receiver_restarted`: the contract excludes only sender restarts, disconnects and wraps, so a
+  receiver reset with the port still open does not start a new run. The ids it misses while it
+  reboots (about 0.35 s in the GES-68 check) are missing from the dataset and count as loss.
+  Unplugging a receiver is a disconnect and is excluded.
+- `receiver_stalled` / `receiver_resumed` (contract Section 2): a stall caused by a sender restart
+  already starts a new run through the lower `id`; ids missed while the sender kept sending count
+  as loss.

@@ -62,6 +62,7 @@ If firmware changes the field order or representation, the schema version is inc
 | `receiver_restarted` | A header row (any line starting with `type,id,mac,`) arrives after capture has started. The next 100 records are gain warm-up records. |
 | `config_mismatch` | An accepted record has `bandwidth`, `secondary_channel`, `stbc` or `channel` different from the session's configuration. Logged when the value changes, not for every record; the record is still kept. |
 | `receiver_disconnected` / `receiver_reconnected` | A read fails or the port disappears / the receiver is back. Reconnection records the port used. |
+| `receiver_stalled` / `receiver_resumed` | The port is still open, but no `CSI_DATA` line has arrived for the reader's stall timeout (default 2 s; other serial lines do not count) / `CSI_DATA` lines arrive again. `receiver_stalled` adds `seconds_without_records` and `transport_port`; `receiver_resumed` adds `stalled_for_s`. A stall does not split a run in the packet metrics: if the sender restarted, the lower `id` already starts a new run. |
 
 Other serial lines (boot logs, banners, the header, diagnostics) are not packet records. The session directory and earlier valid records are kept even if capture stops early.
 

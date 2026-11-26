@@ -150,6 +150,18 @@ def test_sender_restart_during_a_disconnect_is_counted():
     assert s["missing_ids"] == 0
 
 
+def test_stall_and_receiver_restart_do_not_split_a_run():
+    m, t = feed(range(0, 50))
+    m.add_event({"kind": "receiver_stalled", "seconds_without_records": 2.0, "host_monotonic_ns": t})
+    m.add_event({"kind": "receiver_resumed", "stalled_for_s": 2.5, "host_monotonic_ns": t + 1})
+    m.add_event({"kind": "receiver_restarted", "warmup_records": 100, "host_monotonic_ns": t + 2})
+    feed(range(80, 100), start_ns=t + 3, m=m)
+    s = m.summary(5.0)
+    assert (s["expected_ids"], s["missing_ids"]) == (100, 30)  # ids 50..79 were not received
+    assert s["sender_restarts"] == 0
+    assert s["disconnect_intervals"] == []
+
+
 def test_receiver_with_no_records_reports_nothing_measured():
     s = ReceiverMetrics("rx2").summary()
     assert s["accepted_records"] == 0
