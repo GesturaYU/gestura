@@ -266,8 +266,9 @@ class _ReceiverWorker(threading.Thread):
         session = self._session
         port = None
         try:
-            port = session.resolver().get(self.spec.usb_serial_number)
-            if port is not None:
+            found = session.resolver().get(self.spec.usb_serial_number, [])
+            if len(found) == 1:  # never reconnect to one of several ports with the same serial
+                port = found[0]
                 self._transport = session.opener(port)
         except OSError:
             self._transport = None
@@ -277,8 +278,9 @@ class _ReceiverWorker(threading.Thread):
         clock = session.clock
         now_ns = clock.monotonic_ns()
         self._last_csi_ns = now_ns
-        # Replugging a receiver usually restarts it, and it prints its header before the port can
-        # be reopened (GES-69 board check), so the gain warm-up state is unknown again.
+        # Replugging a receiver restarts it. On Windows its header was printed before the port
+        # could be reopened (GES-69 board check), so the gain warm-up state is unknown until a
+        # header is seen; on macOS the header arrives after the reopen and starts the count.
         self._set(state="connected", transport_port=port, warmup_records_remaining=None)
         self._event(now_ns, clock.utc_now(), "receiver_reconnected", transport_port=port)
 
@@ -318,13 +320,24 @@ class CaptureSession:
         self._start_ports: Dict[str, str] = {}
 
     def check_receivers(self) -> Dict[str, str]:
-        """Check that every configured serial number is connected; return receiver_id -> port."""
+        """Check that every configured serial number is present exactly once (contract Section 2).
+
+        Return receiver_id -> port. Raise SessionStartError if a serial number is missing or is
+        reported by more than one port; the reader never picks one of several ports.
+        """
         ports = self.resolver()
-        missing = [f"{r.receiver_id} ({r.board_id}, serial {r.usb_serial_number})"
-                   for r in self.receivers if r.usb_serial_number not in ports]
-        if missing:
-            raise SessionStartError("receiver not connected: " + "; ".join(missing))
-        return {r.receiver_id: ports[r.usb_serial_number] for r in self.receivers}
+        problems = []
+        for r in self.receivers:
+            found = ports.get(r.usb_serial_number, [])
+            if not found:
+                problems.append(f"receiver not connected: {r.receiver_id} ({r.board_id}, "
+                                f"serial {r.usb_serial_number})")
+            elif len(found) > 1:
+                problems.append(f"serial {r.usb_serial_number} of {r.receiver_id} ({r.board_id}) "
+                                f"is reported by several ports: {', '.join(sorted(found))}")
+        if problems:
+            raise SessionStartError("; ".join(problems))
+        return {r.receiver_id: ports[r.usb_serial_number][0] for r in self.receivers}
 
     def start(self) -> None:
         if self._workers:

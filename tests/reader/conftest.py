@@ -52,21 +52,21 @@ class FakeBus:
     """What the operating system would report: USB serial number -> port, and the ports."""
 
     def __init__(self):
-        self.serials = {}
+        self.serials = {}  # USB serial number -> port names reporting it
         self.ports = {}
 
     def plug(self, serial, device):
         port = FakePort(device)
-        self.serials[serial] = device
+        self.serials.setdefault(serial, []).append(device)
         self.ports[device] = port
         return port
 
     def unplug(self, serial):
-        device = self.serials.pop(serial)
-        self.ports[device].push(DISCONNECT)
+        for device in self.serials.pop(serial):
+            self.ports[device].push(DISCONNECT)
 
     def resolver(self):
-        return dict(self.serials)
+        return {serial: list(devices) for serial, devices in self.serials.items()}
 
     def opener(self, device):
         port = self.ports.get(device)

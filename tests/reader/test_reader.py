@@ -252,6 +252,45 @@ def test_missing_receiver_stops_the_session_start(tmp_path, bus):
     assert [s.state for s in session.status()] == ["not_started", "not_started"]
 
 
+def test_serial_number_reported_by_two_ports_stops_the_session_start(tmp_path, bus):
+    # Contract Section 2: every configured serial number must be present exactly once.
+    bus.plug("SER-B2", "COM10")
+    bus.plug("SER-B2", "COM12")
+    session = make_session(tmp_path, bus)
+    with pytest.raises(SessionStartError, match="SER-B2 .* several ports: COM10, COM12"):
+        session.start()
+    assert not (tmp_path / "S1").exists()
+    assert not bus.ports["COM10"].closed and not bus.ports["COM12"].closed  # neither was opened
+
+
+def test_unrelated_duplicate_serial_number_does_not_matter(tmp_path, bus):
+    port = bus.plug("SER-B2", "COM10")
+    bus.plug("OTHER", "COM20")
+    bus.plug("OTHER", "COM21")
+    port.push(record_line(1))
+    session = make_session(tmp_path, bus)
+    session.start()
+    wait_until(lambda: accepted(session)["rx1"] == 1)
+    session.stop()
+
+
+def test_no_reconnect_while_two_ports_report_the_serial_number(tmp_path, bus):
+    bus.plug("SER-B2", "COM10")
+    session = make_session(tmp_path, bus)
+    session.start()
+    bus.unplug("SER-B2")
+    wait_until(lambda: session.status()[0].state == "disconnected")
+    bus.plug("SER-B2", "COM14")
+    bus.plug("SER-B2", "COM15")
+    __import__("time").sleep(0.2)  # several reconnect polls
+    assert session.status()[0].state == "disconnected"
+    bus.unplug("SER-B2")
+    bus.plug("SER-B2", "COM16")
+    wait_until(lambda: session.status()[0].state == "connected")
+    session.stop()
+    assert events(tmp_path, "receiver_reconnected")[0]["transport_port"] == "COM16"
+
+
 def test_duplicate_serial_number_in_configuration_is_rejected(tmp_path, bus):
     with pytest.raises(ValueError, match="usb_serial_number"):
         make_session(tmp_path, bus, receivers=(RX1, ReceiverSpec("rx2", "B3", "SER-B2")))

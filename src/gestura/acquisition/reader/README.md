@@ -13,7 +13,7 @@ Out of scope here: packet rate and loss summaries (GES-70), the scripted recordi
 |---|---|
 | `wire.py` | Parses and validates one line: the 25 fields, the seven reason codes in contract order, negative `id`/`local_timestamp` from older firmware converted to unsigned. No I/O. |
 | `reader.py` | `CaptureSession`: one thread per receiver, identity by USB serial number, output files, events, status. |
-| `ports.py` | Serial port discovery by USB serial number; opens ports at 921600 8N1 without toggling DTR/RTS (so opening a port does not reset the board). |
+| `ports.py` | Serial port discovery by USB serial number; opens ports at 921600 8N1 with DTR/RTS deasserted (whether that resets the receiver depends on the OS, see below). |
 | `config.py`, `receivers.example.json` | Host configuration: board label -> USB serial number, expected link settings. |
 | `__main__.py` | Command line. |
 | `fake_receiver.py` | Writes synthetic receiver output to a serial port, for trying things without boards. |
@@ -54,9 +54,11 @@ python3 -m venv .venv
   receivers with interleaved half-lines; missing, duplicate and restarted sequence numbers kept as
   received; receiver restart; configuration mismatch; a stalled receiver and an unplugged
   receiver (reported, the other stream continues, reconnect on a new port name); session start
-  checks; existing output never overwritten.
-- `test_serial_port.py` (Linux/macOS only, skipped on Windows): two receivers through real
-  pyserial ports, using pseudo-terminals instead of boards.
+  checks, including a serial number reported by two ports; existing output never overwritten.
+- `test_serial_port.py`: two receivers through real pyserial ports, using pseudo-terminals
+  instead of boards (Linux/macOS only, skipped on Windows). The pseudo-terminals are opened at
+  115200 baud because a macOS pseudo-terminal rejects 921600; a second test checks that real
+  receivers are opened at 921600 with DTR/RTS deasserted.
 
 ## Run the reader
 
@@ -80,7 +82,8 @@ python3 -m venv .venv
    `set PYTHONPATH=src` (cmd) or `$env:PYTHONPATH="src"` (PowerShell); on macOS/Linux prefix the
    command with `PYTHONPATH=src`. The reader prints each receiver's state every 2 s and every event
    as it happens. Ctrl+C stops it. It refuses to start if a configured receiver is not connected,
-   or if the output directory already contains reader output.
+   if its USB serial number is reported by more than one port (contract Section 2: present
+   exactly once), or if the output directory already contains reader output.
 
 ## Output
 
@@ -96,17 +99,18 @@ wire fields in contract order (`data` as an integer array) and `raw_line`. Sende
 renumbered and duplicates are never removed; loss is computed later from them (GES-70).
 
 Events (`events.ndjson`): `malformed_record`, `receiver_restarted`, `config_mismatch`,
-`receiver_disconnected` and `receiver_reconnected` as in contract Section 2, plus two kinds that
-are **not in contract 1.0.0 yet**:
+`receiver_disconnected` and `receiver_reconnected` as in contract Section 2, plus two kinds for
+stalls:
 
 - `receiver_stalled` (`seconds_without_records`, `transport_port`): the port is still open but no
   `CSI_DATA` line arrived for `--stall-timeout` seconds (default 2). Log lines do not count.
 - `receiver_resumed` (`stalled_for_s`): `CSI_DATA` lines arrive again.
 
-GES-69 requires stalls to be reported; the contract only names disconnects. These two kinds need
-to be added to the contract (and accepted by the GES-72 validator) before merging.
+GES-69 requires stalls to be reported, and contract 1.0.0 only names disconnects. The contract
+owner is adding these two kinds to the contract's events table, and the GES-72 validator accepts
+them from there (PR #8 review).
 
-Interpretations to confirm with the contract owner:
+Interpretations agreed with the contract owner in the PR #8 review:
 
 - `receiver_restarted` is written for a header row after the first `CSI_DATA` line of the session.
   A header before any record (board booting as capture starts) only starts the warm-up count.
@@ -115,10 +119,21 @@ Interpretations to confirm with the contract owner:
   values.
 - Lines read in one chunk share one receipt timestamp.
 - After `receiver_reconnected`, the gain warm-up state is unknown (`warmup_records_remaining` is
-  `None` in `status()`). In the board check, replugging a receiver restarted it (`local_timestamp`
-  started again near 0) and its banner and header were printed before Windows reopened the port,
-  so no `receiver_restarted` event was written. Downstream processing should treat the first 100
-  records after a reconnect as possible warm-up records.
+  `None` in `status()`) until a header row is seen. See the next section for when that happens.
+
+## Receiver resets: Windows and macOS differ
+
+Observed in the GES-69 board checks (one receiver, GES-68 firmware):
+
+| | Windows (2026-11-26) | macOS (2026-11-26) |
+|---|---|---|
+| Opening the port at session start | No reset: records start mid-stream, no header, warm-up state unknown | Resets the receiver: banner and header arrive first, the first record is about 0.35 s after boot, warm-up counted from 100 |
+| Replugging the receiver | Restarts it, but the banner and header are printed before Windows reopens the port: `receiver_reconnected` without `receiver_restarted`, warm-up state unknown | Restarts it and the header arrives after the reopen: `receiver_reconnected`, then `receiver_restarted` about 0.35 s later, warm-up counted from 100 |
+
+So on macOS every session starts with a receiver reset and a known warm-up. On Windows the
+warm-up state at session start and after a reconnect is unknown, and downstream processing should
+treat the first 100 records after a reconnect as possible warm-up records. A restart that is not
+announced by a header can still be recognised from `local_timestamp` starting again near 0.
 
 ## Library use
 

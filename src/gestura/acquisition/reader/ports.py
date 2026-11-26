@@ -1,12 +1,12 @@
 """Serial port discovery and opening.
 
-The reader never talks to pyserial directly: it gets a *resolver* (USB serial number -> current
-port name) and an *opener* (port name -> transport). Tests replace both with fakes; real use
-takes the defaults below.
+The reader never talks to pyserial directly: it gets a *resolver* (USB serial number -> the port
+names that currently report it) and an *opener* (port name -> transport). Tests replace both with
+fakes; real use takes the defaults below.
 """
 from __future__ import annotations
 
-from typing import Callable, Dict, Protocol
+from typing import Callable, Dict, List, Protocol
 
 BAUD_RATE = 921600  # contract Section 1: UART console, 8N1
 
@@ -18,18 +18,19 @@ class Transport(Protocol):
     def close(self) -> None: ...
 
 
-Resolver = Callable[[], Dict[str, str]]
+# Every port is listed, so a serial number reported by more than one port can be detected.
+Resolver = Callable[[], Dict[str, List[str]]]
 Opener = Callable[[str], Transport]
 
 
-def list_usb_serial_ports() -> Dict[str, str]:
-    """Map the USB serial number of every connected serial port to its port name."""
+def list_usb_serial_ports() -> Dict[str, List[str]]:
+    """Map the USB serial number of every connected serial port to the port names reporting it."""
     from serial.tools import list_ports
 
-    ports: Dict[str, str] = {}
+    ports: Dict[str, List[str]] = {}
     for info in list_ports.comports():
         if info.serial_number:
-            ports.setdefault(info.serial_number, info.device)
+            ports.setdefault(info.serial_number, []).append(info.device)
     return ports
 
 
@@ -46,15 +47,23 @@ def describe_ports() -> list:
 
 
 class SerialTransport:
-    """A pyserial port opened without toggling DTR/RTS, so opening it does not reset the board."""
+    """A pyserial port, 8N1, opened with DTR and RTS deasserted.
 
-    def __init__(self, port: str, read_timeout_s: float = 0.2):
+    Whether opening the port resets the receiver depends on the operating system. In the GES-69
+    board checks it did not on Windows, but on macOS every open reset the receiver, so a session
+    there starts with the boot banner, the header row and a known gain warm-up.
+
+    ``baud_rate`` is the contract's 921600 for receivers. Tests that use pseudo-terminals pass a
+    standard rate, because a macOS pseudo-terminal rejects 921600.
+    """
+
+    def __init__(self, port: str, read_timeout_s: float = 0.2, baud_rate: int = BAUD_RATE):
         import serial
 
         self._serial_exception = serial.SerialException
         self._ser = serial.Serial()
         self._ser.port = port
-        self._ser.baudrate = BAUD_RATE
+        self._ser.baudrate = baud_rate
         self._ser.bytesize = serial.EIGHTBITS
         self._ser.parity = serial.PARITY_NONE
         self._ser.stopbits = serial.STOPBITS_ONE
