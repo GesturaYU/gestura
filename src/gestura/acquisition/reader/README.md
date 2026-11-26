@@ -114,6 +114,11 @@ Interpretations to confirm with the contract owner:
   when the mismatching values change, and again if they change after returning to the expected
   values.
 - Lines read in one chunk share one receipt timestamp.
+- After `receiver_reconnected`, the gain warm-up state is unknown (`warmup_records_remaining` is
+  `None` in `status()`). In the board check, replugging a receiver restarted it (`local_timestamp`
+  started again near 0) and its banner and header were printed before Windows reopened the port,
+  so no `receiver_restarted` event was written. Downstream processing should treat the first 100
+  records after a reconnect as possible warm-up records.
 
 ## Library use
 

@@ -277,7 +277,9 @@ class _ReceiverWorker(threading.Thread):
         clock = session.clock
         now_ns = clock.monotonic_ns()
         self._last_csi_ns = now_ns
-        self._set(state="connected", transport_port=port)
+        # Replugging a receiver usually restarts it, and it prints its header before the port can
+        # be reopened (GES-69 board check), so the gain warm-up state is unknown again.
+        self._set(state="connected", transport_port=port, warmup_records_remaining=None)
         self._event(now_ns, clock.utc_now(), "receiver_reconnected", transport_port=port)
 
     def _event(self, now_ns: int, now_utc: str, kind: str, **extra) -> None:

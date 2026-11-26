@@ -189,6 +189,34 @@ def test_unplugged_receiver_is_reported_and_the_other_continues(tmp_path, bus):
     assert [r["id"] for r in rx2] == [1, 20]
 
 
+def test_warmup_state_is_unknown_after_a_reconnect(tmp_path, bus):
+    # A replugged receiver restarts and prints its header before the port is reopened, so the
+    # reader cannot know how many warm-up records remain.
+    port = bus.plug("SER-B2", "COM10")
+    port.push(HEADER)
+    port.push(record_line(1))
+    session = make_session(tmp_path, bus)
+    session.start()
+    wait_until(lambda: accepted(session)["rx1"] == 1)
+    assert session.status()[0].warmup_records_remaining == 99
+
+    bus.unplug("SER-B2")
+    wait_until(lambda: session.status()[0].state == "disconnected")
+    port2 = bus.plug("SER-B2", "COM10")
+    wait_until(lambda: session.status()[0].state == "connected")
+    port2.push(record_line(5))
+    wait_until(lambda: accepted(session)["rx1"] == 2)
+    assert session.status()[0].warmup_records_remaining is None
+
+    port2.push(HEADER)  # a header seen after the reconnect starts a known warm-up again
+    port2.push(record_line(1))
+    wait_until(lambda: accepted(session)["rx1"] == 3)
+    session.stop()
+    assert session.status()[0].warmup_records_remaining == 99
+    assert [e["kind"] for e in events(tmp_path)] == [
+        "receiver_disconnected", "receiver_reconnected", "receiver_restarted"]
+
+
 def test_stalled_receiver_is_reported_and_the_other_continues(tmp_path, bus):
     p1 = bus.plug("SER-B2", "COM10")
     p2 = bus.plug("SER-B3", "COM11")
