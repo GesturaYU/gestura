@@ -150,7 +150,7 @@ class ReceiverMetrics:
                 return None
             return (self._last_ns - self._first_ns) / 1e9
 
-    def summary(self, interval_s: Optional[float] = None, provisional: bool = True) -> dict:
+    def summary(self, interval_s: Optional[float] = None, provisional: bool = False) -> dict:
         """The `packet_metrics` entry of this receiver (contract Section 3).
 
         `interval_s` is the stated interval the rate is measured over. Without it, the span between
@@ -201,7 +201,7 @@ class SessionMetrics:
         if "receiver_id" in event:
             self._get(event["receiver_id"]).add_event(event)
 
-    def packet_metrics(self, interval_s: Optional[float] = None, provisional: bool = True) -> dict:
+    def packet_metrics(self, interval_s: Optional[float] = None, provisional: bool = False) -> dict:
         """The `packet_metrics` value of session.json: receiver_id -> metrics."""
         return {rid: m.summary(interval_s, provisional) for rid, m in sorted(self.receivers.items())}
 
@@ -212,7 +212,7 @@ def _read_ndjson(path: Path) -> List[dict]:
 
 
 def summarize_capture(capture_dir, interval_s: Optional[float] = None,
-                      provisional: bool = True) -> dict:
+                      provisional: bool = False) -> dict:
     """Replay a reader output directory (receivers/*.ndjson, events.ndjson) into packet_metrics.
 
     Records and events are merged per receiver by `host_monotonic_ns`. At equal timestamps records

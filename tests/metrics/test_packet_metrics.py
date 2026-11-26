@@ -229,6 +229,7 @@ def test_cli_writes_packet_metrics_into_session_json(tmp_path, capsys):
     session = json.loads((tmp_path / "session.json").read_text(encoding="utf-8"))
     assert session["session_id"] == "S20261125-100000"
     assert session["packet_metrics"]["rx1"]["measured_packet_rate_hz"] == 90.0
+    assert session["packet_metrics"]["rx1"]["provisional"] is False  # computed after capture
     assert "NFR-09 met" in capsys.readouterr().out
 
 

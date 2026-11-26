@@ -41,8 +41,8 @@ events of `events.ndjson`.
 - **Not measured.** A receiver with no records has `null` rate and loss, and NFR-09 is reported as
   "not measured", never as met.
 
-`provisional` is `true` by default, as contract 1.0.0 requires until the GES-68 hardware check is
-recorded in the contract (pull request #7); pass `provisional=False` (`--final`) after that.
+`provisional` (contract Section 2) is `false` for values computed after capture, which is the
+default. Pass `provisional=True` for values read while capture is still running.
 
 ## Use
 

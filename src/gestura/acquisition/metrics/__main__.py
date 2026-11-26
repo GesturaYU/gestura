@@ -17,14 +17,12 @@ def main(argv=None) -> int:
     p.add_argument("capture_dir", type=Path, help="directory with receivers/*.ndjson and events.ndjson")
     p.add_argument("--interval-s", type=float, default=None,
                    help="interval the rate is measured over (default: first to last accepted record)")
-    p.add_argument("--final", action="store_true",
-                   help="mark the metrics as not provisional")
     p.add_argument("--write-session", action="store_true",
                    help="write packet_metrics into <capture_dir>/session.json (must already exist)")
     args = p.parse_args(argv)
 
     try:
-        metrics = summarize_capture(args.capture_dir, args.interval_s, provisional=not args.final)
+        metrics = summarize_capture(args.capture_dir, args.interval_s)
     except FileNotFoundError as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
