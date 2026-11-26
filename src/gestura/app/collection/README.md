@@ -43,6 +43,10 @@ measured in GES-68), writes to `data/dry_runs/` (ignored by git), stores `dry-ru
 `collection_tool_version` and `synthetic` as the firmware commit, and prints the label/timestamp
 alignment check at the end. Its output is test data, never a participant recording.
 
+On macOS the cue tones need `sounddevice` (installed from `requirements.txt`); they then start about
+30 ms after the recorded cue time, a fixed offset. Without it they fall back to `afplay`, which can
+start 0.3-0.9 s late, and a warning is printed.
+
 ## Not yet included
 
 - Real receivers: needs the host reader (GES-69). Without `--dry-run` the tool stops with a message.
