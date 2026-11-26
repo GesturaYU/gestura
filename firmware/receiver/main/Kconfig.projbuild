@@ -1,0 +1,39 @@
+menu "Gestura CSI receiver (link measurement)"
+
+    choice CSI_OUT_MODE
+        prompt "How the receiver delivers CSI lines to the computer"
+        default CSI_OUT_SERIAL
+
+        config CSI_OUT_SERIAL
+            bool "USB serial (wired)"
+
+        config CSI_OUT_UDP
+            bool "UDP over Wi-Fi"
+    endchoice
+
+    config CSI_WIFI_SSID
+        string "Access point name (UDP mode)"
+        depends on CSI_OUT_UDP
+        default ""
+
+    config CSI_WIFI_PASSWORD
+        string "Access point password (UDP mode)"
+        depends on CSI_OUT_UDP
+        default ""
+
+    config CSI_UDP_HOST
+        string "Computer IP address (UDP mode)"
+        depends on CSI_OUT_UDP
+        default ""
+
+    config CSI_TEST_UDP_ONLY
+        bool "Test: no CSI, no ESP-NOW, only send numbered UDP datagrams (UDP mode)"
+        depends on CSI_OUT_UDP
+        default n
+
+    config CSI_UDP_PORT
+        int "Computer UDP port (UDP mode)"
+        depends on CSI_OUT_UDP
+        default 5005
+
+endmenu
