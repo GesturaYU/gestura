@@ -69,8 +69,37 @@ Each comparison is reported separately. The results of the three comparisons are
 
 **Retraining and testing.** After selection, the model may be retrained on all training sessions of the split with the chosen settings. The test sessions are used once, for the reported result.
 
+## 4. Required metadata
+
+**Fields.** The splits in Sections 1–3 need the following fields. The storage locations are those of the session contract (Section 3).
+
+| Field | Where the contract stores it | Used for |
+|---|---|---|
+| `session_id` | `session.json` and `trials.csv`. | Keeps a session whole; joins trials to their session. |
+| `recording_date` | `session.json` (local Europe/Istanbul date of the session start; also the folder prefix). | Held-out day grouping and each room's day order. |
+| `participant_code` | `session.json`. | Held-out participant grouping. |
+| `room_id` | `session.json`. | Held-out room grouping; each room's day order. |
+| `room_role` | `session.json`. | Keeps `final_demo` sessions out of training and validation. |
+| `session_type` | `session.json`. | Keeps `continuous_no_gesture` sessions out of the classification splits. |
+| `class_label` | `trials.csv`. | Labels; per-class sample counts (NFR-04). |
+| `failed` | `trials.csv`. | Excludes failed trials. |
+| `cue_start_monotonic_ns`, `cue_end_monotonic_ns` | `trials.csv`; matched to `host_monotonic_ns` in `receivers/<receiver_id>.ndjson`. | Assigns packets and windows to trials. |
+| `schema_version` | `session.json`. | All sessions in one evaluation use the same schema version. |
+
+**Fields per comparison.**
+
+| Comparison | Fields needed |
+|---|---|
+| All comparisons | `session_id`, `room_role`, `session_type`, `class_label`, `failed`, `cue_start_monotonic_ns`, `cue_end_monotonic_ns`, `schema_version` |
+| Held-out day | `recording_date`, `room_id` (each room's day order) |
+| Held-out participant | `participant_code` |
+| Held-out room | `room_id` |
+
+**Schema check.** Every field above is stored by contract 1.0.0 (Section 3), so no field is missing for the splits as defined in Sections 1–3. One possible gap remains: `session.json` records whether the recorder was in the room (`recorder_in_room`) but not who the recorder was. The recorder is one of P1–P5, so in the held-out participant comparison the held-out participant may have been in the room as the recorder during training sessions, and the protocol cannot detect this. See open question 4.
+
 ## Open questions
 
 1. **Held-out day:** is the combined rule of Section 2.1 acceptable, and will the recording schedule avoid the date overlap described there?
 2. **Held-out room:** the recording procedure (GES-73, Section 4) says data is collected in 7 rooms and that the final demonstration room is kept out of training. Is the final demonstration room one of these 7 rooms (6 dataset rooms, 6 folds) or an additional room (7 dataset rooms, 7 folds)?
 3. **Held-out day:** a room's second day (validation) can fall on the same date as another room's first day (training), which puts validation and training sessions on the same date. Should such training sessions be left out of the inner training set during model selection, as is done for the test dates?
+4. **Recorder identity (held-out participant):** the person who records a session is one of P1–P5, but `session.json` stores only whether the recorder was in the room (`recorder_in_room`), not who it was. The held-out participant may therefore have been in the room as the recorder during training sessions, which the protocol cannot detect. Adding the recorder's participant code would be a contract change (GES-67). Should it be added? This must be decided before real collection.
