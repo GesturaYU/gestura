@@ -1,17 +1,17 @@
 # CSI stream and session contract (v1)
 
-**Jira:** GES-67. **Schema version:** `1.0.0`. This contract covers the ESP32-S3 sender and receiver, the host reader (GES-69), packet metrics (GES-70), the recording flow (GES-71), metadata validation (GES-72) and evaluation splits (GES-74). Section 6 lists what is verified, what comes from source reading only, and what GES-68 must change in the firmware.
+**Jira:** GES-67. **Schema version:** `1.0.0`. This contract covers the ESP32-S3 sender and receiver, the host reader (GES-69), packet metrics (GES-70), the recording flow (GES-71), metadata validation (GES-72) and evaluation splits (GES-74). Section 6 lists what is verified on source and hardware and what GES-68 changed in the firmware.
 
 ## 1. Receiver wire record
 
-The receiver firmware is the team's `csi_recv_ab` overlay on Espressif esp-csi (commit `8633d67`, ESP-IDF v5.5.6), paired with the `csi_send_ch11_ht20` sender: channel 11, 20 MHz (HT20), ESP-NOW broadcast, 100 packets/s configured. The receiver writes to its UART console at 921600 baud (8N1). On the current boards this is the USB-to-UART (CH343) port, not the native USB port.
+The receiver firmware is `firmware/receiver` (the team's `csi_recv_ab` overlay on the Espressif esp-csi `csi_recv` example, esp-csi commit `8633d67`, ESP-IDF v5.5.6), paired with `firmware/sender` (`csi_send_ch11_ht20`): channel 11, 20 MHz (HT20), ESP-NOW broadcast, 100 packets/s configured. The receiver writes to its UART console at 921600 baud (8N1). On the current boards this is the USB-to-UART (CH343) port, not the native USB port.
 
 Each packet is one UTF-8 line ending in `\n`. The final `data` field is quoted and contains commas. The 25 fields are in this exact order:
 
 | # | Field | Origin | Meaning |
 |---|---|---|---|
 | 1 | `type` | Receiver firmware | Literal `CSI_DATA`. |
-| 2 | `id` | Sender, copied by receiver | Sender packet sequence number: a `uint32` counter that starts at 0 when the sender boots and increases by 1 per send. It is **not** receiver identity. |
+| 2 | `id` | Sender, copied by receiver | Sender packet sequence number: a `uint32` counter that starts at 0 when the sender boots and increases by 1 per send. The first `id` a receiver sees after a sender boot may be above 0 (it was 1 in the GES-68 check). It is **not** receiver identity. |
 | 3 | `mac` | Receiver firmware | Source MAC of the received packet (the sender, `1a:00:00:00:00:00` in the current firmware). It does not identify the receiver; see Section 2. |
 | 4–16 | `rssi`, `rate`, `sig_mode`, `mcs`, `bandwidth`, `smoothing`, `not_sounding`, `aggregation`, `stbc`, `fec_coding`, `sgi`, `noise_floor`, `ampdu_cnt` | Receiver firmware | ESP-IDF receive metadata as integers. `bandwidth` is the raw field (0 = 20 MHz, 1 = 40 MHz), not a string such as `HT20`. |
 | 17–21 | `channel`, `secondary_channel`, `local_timestamp`, `ant`, `sig_len` | Receiver firmware | `secondary_channel`: 0 none, 1 above, 2 below. `local_timestamp` is ESP-IDF `rx_ctrl.timestamp`: an unsigned 32-bit count of microseconds since the receiver booted. It wraps to 0 about every 71.6 min, is not UTC and is not synchronized between receivers. |
@@ -26,7 +26,7 @@ Header row:
 type,id,mac,rssi,rate,sig_mode,mcs,bandwidth,smoothing,not_sounding,aggregation,stbc,fec_coding,sgi,noise_floor,ampdu_cnt,channel,secondary_channel,local_timestamp,ant,sig_len,rx_state,len,first_word,data
 ```
 
-**Start-up.** After boot the receiver prints an `ESP_LOGI` banner (`================ CSI RECV ================`) and the header row just before its first CSI record. For its first 100 CSI packets it measures the automatic gain; from the 100th packet on it fixes the gain at that baseline (`CONFIG_FORCE_GAIN=1`). The gain values are not printed on ESP32-S3, so the host recognises the warm-up only by counting records after a header row. When the host connects to a receiver that is already running, it sees no header and the gain state is unknown.
+**Start-up.** After boot the receiver prints an `ESP_LOGI` banner (`================ CSI RECV ================`) and the header row just before its first CSI record. For its first 100 CSI packets it measures the automatic gain; from the 100th packet on it fixes the gain at that baseline (`CONFIG_FORCE_GAIN=1`). The gain values are not printed on ESP32-S3, so the host recognises the warm-up only by counting records after a header row. The gain component prints one `wifi_rx_gain: agc_gain(median): …` log line after about 50 records; it is not the point at which the gain is fixed and is ignored like other log lines. When the host connects to a receiver that is already running, it sees no header and the gain state is unknown.
 
 **CSI data layout.** Each subcarrier is two signed bytes: imaginary part first, then real part (ESP-IDF Wi-Fi guide, *Wi-Fi Channel State Information*). For the project configuration (HT packet, 20 MHz, `secondary_channel` 0, `stbc` 0), `len` is 256: 64 LLTF subcarriers followed by 64 HT-LTF subcarriers, each block in the order 0…31, then −32…−1. Values are raw. They are comparable only after the gain warm-up.
 
@@ -52,7 +52,7 @@ If firmware changes the field order or representation, the schema version is inc
 | `payload_value_out_of_range` | An element is outside −128…127. |
 | `payload_length_mismatch` | The number of elements differs from `len`. |
 
-`id` and `local_timestamp` are unsigned. The current overlay prints them with `%d`, so `local_timestamp` appears negative after about 35.8 min of receiver uptime; the host converts a negative value `v` to `v + 2^32`, which is lossless, and does not compute intervals across a wrap without unwrapping.
+`id` and `local_timestamp` are unsigned. The firmware in `firmware/receiver` prints both with `PRIu32`. Builds before GES-68 printed them with `%d`, so in their output `local_timestamp` appears negative after about 35.8 min of receiver uptime; the host converts a negative value `v` to `v + 2^32`, which is lossless, and does not compute intervals across a wrap without unwrapping.
 
 **Events.** `events.ndjson` holds one JSON object per line with `host_time_utc`, `host_monotonic_ns`, `receiver_id`, `kind` and kind-specific fields:
 
@@ -65,7 +65,7 @@ If firmware changes the field order or representation, the schema version is inc
 
 Other serial lines (boot logs, banners, the header, diagnostics) are not packet records. The session directory and earlier valid records are kept even if capture stops early.
 
-**Packet metrics (GES-70).** Per receiver, loss is computed from sender IDs within a contiguous run: `expected = last_id - first_id + 1`, `missing = expected - unique_ids`. An `id` seen only on a malformed line counts as missing, and the line is also counted under `malformed_lines`. Duplicates are counted separately. An `id` lower than the previous one (sender restart) starts a new run. Intervals across a sender restart, receiver disconnect or sequence wrap are not counted as ordinary loss. Packet rate is measured from accepted records over a stated interval; the configured 100 packets/s is not the expected rate, because the sender produced about 91 IDs/s in GES-48. When two receivers see the same sender packet, their equal `id` values allow pairing, and `receiver_id` keeps the streams apart. Metrics stay `provisional` until the GES-68 hardware check confirms the sequence behaviour on the current firmware.
+**Packet metrics (GES-70).** Per receiver, loss is computed from sender IDs within a contiguous run: `expected = last_id - first_id + 1`, `missing = expected - unique_ids`. An `id` seen only on a malformed line counts as missing, and the line is also counted under `malformed_lines`. Duplicates are counted separately. An `id` lower than the previous one (sender restart) starts a new run. Intervals across a sender restart, receiver disconnect or sequence wrap are not counted as ordinary loss. Packet rate is measured from accepted records over a stated interval; the configured 100 packets/s is not the expected rate, because the sender produced about 91 IDs/s in GES-48. When two receivers see the same sender packet, their equal `id` values allow pairing, and `receiver_id` keeps the streams apart. The GES-68 hardware check confirmed this sequence behaviour on the current firmware (Section 6).
 
 ## 3. Session layout and metadata
 
@@ -131,14 +131,14 @@ GES-69 uses the first two files for parser tests.
 
 **Checked against real output.** Two team captures from 29 Oct 2026 (12,516 lines, kept outside this repository) were made with an earlier 40 MHz build on channel 11. Every complete line had 25 fields; `id` only increased, with no duplicates or restarts within a capture; `local_timestamp` advanced at 1.000 µs per host-clock µs; `len` was 384 and `first_word` 0 in every row. Four lines were broken by an interleaved `Task watchdog got triggered` message at about 30 s intervals (`CONFIG_ESP_TASK_WDT_TIMEOUT_S=30`). At 40 MHz a line is about 1.2 KB and 921600 baud carries at most about 77 lines/s, which matches the loss seen there; GES-48 measured under 2 % loss at 20 MHz.
 
-**Not yet seen on hardware.** A 20 MHz record from the current build (`len` 256, subcarrier order), behaviour across sender and receiver restarts, the gain warm-up, and the USB serial number of the boards' USB-to-UART bridge. These are confirmed in the GES-68 hardware check; if they differ, this document and the fixtures are updated before GES-69 is merged.
+**Checked on hardware (GES-68, 23 Nov 2026).** One receiver and one sender about 1 m apart, both ESP32-S3; raw captures are kept outside this repository.
 
-**Firmware changes for GES-68.** For the receiver to conform to this version:
+- Before the firmware changes below (receiver and sender as used in GES-48): 90 s after a receiver reset gave 8,126 records at 90.6 records/s, 0.4 % loss, no duplicates and no malformed lines. Every record had `len` 256, `bandwidth` 0, `channel` 11, `secondary_channel` 0, `stbc` 0 and `first_word` 0. Column 22 was still named `rx_format`.
+- With `firmware/receiver` from this repository: 300 s after a reset gave 26,981 records at 90.0 records/s, 1.06 % loss, no duplicates and no malformed lines, with the same field values, `rx_state` 0 in every record and the header row of Section 1. No task-watchdog message appeared in either capture, so at 20 MHz none split a CSI line.
+- Subcarrier order: in 2,000 records the slots that were always zero were 0 and 27–37 in the LLTF block and 64 and 93–99 in the HT-LTF block. This matches the order 0…31, −32…−1 with 52 used LLTF and 56 used HT-LTF subcarriers.
+- Sender restart: the sender's power was removed for a few seconds. The receiver got no records for 8.3 s, then `id` went from 33,880 to 1 and increased again without duplicates (1.1 % loss in the new run). The new-run rule of Section 2 handles this case.
+- Receiver restart: a reset during capture produced the banner and the header row about 0.35 s later, which is what `receiver_restarted` relies on.
+- USB serial number: the receiver's CH343 bridge reports `5C37270507` (Windows device ID `USB\VID_1A86&PID_55D3\5C37270507`). The sender board's bridge was recorded as `5C37272594` on 17 Oct 2026. The two differ, so the eFuse MAC boot line of Section 2 is not needed.
+- Not observed: the gain warm-up itself (the firmware does not print when the gain is fixed) and a `local_timestamp` wrap.
 
-1. Check `info->payload_len >= 19` before reading the sequence number, copy it with `memcpy`, and print it with `PRIu32`.
-2. Print `local_timestamp` with `%u` (or `PRIu32`).
-3. Print `rx_ctrl->rx_state` in column 22 and name the column `rx_state` in the header. The overlay currently prints `sig_mode` there under the name `rx_format`.
-4. Remove the cause of the task-watchdog messages, or at least check at 20 MHz that they no longer split CSI lines.
-5. Commit `csi_send_ch11_ht20` and `csi_recv_ab` under `firmware/`, so that `firmware_commit` in `session.json` points to a real commit.
-
-Until then, the host's tolerance for negative `id`/`local_timestamp` values and its reason codes keep real output from the current overlay readable.
+**Firmware changes made in GES-68.** `firmware/receiver` (from `csi_recv_ab`) and `firmware/sender` (from `csi_send_ch11_ht20`) are committed, so `firmware_commit` in `session.json` points to a real commit. The receiver now checks `info->payload_len >= 19` before reading the sequence number, copies it with `memcpy`, prints `id` and `local_timestamp` with `PRIu32`, and prints `rx_ctrl->rx_state` in column 22 under the name `rx_state`. A shorter payload produces no line. The host keeps accepting negative `id`/`local_timestamp` values so that output from older builds stays readable.

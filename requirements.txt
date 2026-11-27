@@ -2,3 +2,4 @@ pyserial
 numpy
 matplotlib
 pytest
+sounddevice; sys_platform == "darwin"
