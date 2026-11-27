@@ -1,5 +1,5 @@
 pyserial
 numpy
 matplotlib
-sounddevice; sys_platform == "darwin"
 pytest
+sounddevice; sys_platform == "darwin"

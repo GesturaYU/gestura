@@ -1,0 +1,7 @@
+{
+  "boards": {
+    "B2": "5C37270507",
+    "B3": "REPLACE-WITH-SECOND-RECEIVER-SERIAL"
+  },
+  "link": {"channel": 11, "bandwidth": 0, "secondary_channel": 0, "stbc": 0}
+}
