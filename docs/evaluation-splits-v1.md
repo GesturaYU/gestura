@@ -97,9 +97,38 @@ Each comparison is reported separately. The results of the three comparisons are
 
 **Schema check.** Every field above is stored by contract 1.0.0 (Section 3), so no field is missing for the splits as defined in Sections 1–3. One possible gap remains: `session.json` records whether the recorder was in the room (`recorder_in_room`) but not who the recorder was. The recorder is one of P1–P5, so in the held-out participant comparison the held-out participant may have been in the room as the recorder during training sessions, and the protocol cannot detect this. See open question 4.
 
+## 5. Leakage check (later work)
+
+The split code must run these checks for every fold before any result is reported. If a check fails, no result of that fold is reported.
+
+1. No `session_id` is in more than one of training, validation and test.
+2. No value of the held-out key (test date, held-out participant code, held-out room ID) appears in the training or validation sessions. For held-out day, this includes the date rule of Section 2.1.
+3. No `final_demo` session is in training or validation.
+4. No `continuous_no_gesture` session is in any classification split.
+5. No trial with `failed = true` is in training, validation or test.
+6. All sessions have the same `schema_version`.
+7. Everything that is fitted or chosen (Section 3) records the `session_id`s it was computed from, and none of them is a test session.
+
+## 6. What is reported with each result
+
+| Field | Content |
+|---|---|
+| Comparison and fold | Held-out day, held-out participant or held-out room, and the fold. |
+| Groups | The held-out group (test dates, participant code or room ID) and the validation group. |
+| Sessions | The `session_id`s of training, validation and test. |
+| Sample counts | Accepted trials per class (after failed trials are excluded) in training, validation and test (NFR-04). |
+| Metric definition | Macro-averaged F1 as the unweighted mean of the per-class F1 over the four classes `push`, `slow_wave`, `fast_wave` and `no_gesture` (NFR-01). Per-class precision, recall and F1 from the confusion matrix, and the lowest per-class F1 (NFR-02). The difference in macro-averaged F1 between the selected recognizer and the threshold reference, on the same test sessions (NFR-03). The 95% confidence interval from resampling complete test sessions (NFR-01); for NFR-03, the 95% confidence interval of the paired difference (Table 12). |
+| Versions | `schema_version` and the commit of the evaluation code, so that the result can be reproduced. |
+
+## 7. Later work
+
+- Implementing the split code (UC22) and the leakage check of Section 5 is later work, outside GES-74.
+- Model performance is not reported in GES-74.
+
 ## Open questions
 
 1. **Held-out day:** is the combined rule of Section 2.1 acceptable, and will the recording schedule avoid the date overlap described there?
 2. **Held-out room:** the recording procedure (GES-73, Section 4) says data is collected in 7 rooms and that the final demonstration room is kept out of training. Is the final demonstration room one of these 7 rooms (6 dataset rooms, 6 folds) or an additional room (7 dataset rooms, 7 folds)?
 3. **Held-out day:** a room's second day (validation) can fall on the same date as another room's first day (training), which puts validation and training sessions on the same date. Should such training sessions be left out of the inner training set during model selection, as is done for the test dates?
 4. **Recorder identity (held-out participant):** the person who records a session is one of P1–P5, but `session.json` stores only whether the recorder was in the room (`recorder_in_room`), not who it was. The held-out participant may therefore have been in the room as the recorder during training sessions, which the protocol cannot detect. Adding the recorder's participant code would be a contract change (GES-67). Should it be added? This must be decided before real collection.
+5. **Combining folds:** the held-out participant and held-out room comparisons have several folds, but each has one SoW target. Is the reported value computed from the pooled test predictions of all folds, or as the mean of the fold results, and how is the confidence interval resampled in that case?
